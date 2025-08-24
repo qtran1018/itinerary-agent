@@ -1,0 +1,170 @@
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+  background-color: #212737;
+  font-family: system-ui, sans-serif;
+  max-width: 48rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-bottom: 20px;
+  color: #eaedf3;
+}
+
+/* Center the entire questions screen */
+.questions {
+  min-height: 100vh;           /* take full window height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;     /* vertical center */
+  align-items: center;         /* horizontal center */
+  text-align: center;
+}
+
+/* Wrap all checkboxes in a container */
+.checkbox-group {
+  display: flex;
+  flex-direction: column; /* stack vertically */
+  align-items: flex-start; /* align children to the left */
+  text-align: left; /* make labels left-aligned */
+}
+
+
+/* Results flow naturally from the top */
+.results {
+  margin-top: 2rem;   /* give some breathing room at top */
+}
+
+
+
+h1, h2, h3, p, a, pre {
+    color: #eaedf3;
+}
+
+pre {
+  white-space: pre-wrap; /* wraps long lines */
+  word-wrap: break-word; /* breaks very long words if needed */
+  max-width: 100%;       /* ensures it doesn’t overflow container */
+  font-size: large;
+}
+
+.loading-screen {
+  min-height: 100vh;           /* take full window height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;     /* vertical center */
+  align-items: center;         /* horizontal center */
+  text-align: center;
+  color: #eaedf3;
+}
+
+.spinner {
+  border: 6px solid rgba(255, 255, 255, 0.2);
+  border-top: 6px solid #ea4d2d;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+button {
+  background-color: #ea4d2d;
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Hover effect */
+button:hover {
+  background-color: #ff6144; /* lighter shade */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Active (pressed) effect */
+button:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Disabled state */
+button:disabled {
+  background-color: #888;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+input[type="text"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  border: 2px solid #444b5a; /* subtle border */
+  border-radius: 8px;
+  background-color: #2a3042; /* matches your dark theme */
+  color: #eaedf3; /* light text for readability */
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* When user clicks/focuses into textbox */
+input[type="text"]:focus {
+  border-color: #ea4d2d; /* highlight border same as button color */
+  box-shadow: 0 0 6px rgba(234, 77, 45, 0.6); /* soft glow */
+}
+/* Hide the ugly default checkbox */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #444b5a; /* subtle border */
+  border-radius: 4px;
+  background-color: #2a3042; /* dark background */
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+/* Checked state */
+input[type="checkbox"]:checked {
+  border-color: #ea4d2d;
+  background-color: #ea4d2d;
+}
+
+/* Checkmark */
+input[type="checkbox"]:checked::after {
+  content: "✓";
+  font-size: 14px;
+  color: white;
+  position: absolute;
+  top: -2px;
+  left: 2px;
+}
+
+/* Hover effect */
+input[type="checkbox"]:hover {
+  border-color: #ea4d2d;
+}
+
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
