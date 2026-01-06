@@ -62,7 +62,7 @@ export const prompts: Record<string, PromptEntry> = {
     "Group": "I am traveling in a group."
   },
   q15: {
-    "Busy areas": "I prefer to stay in busy areas. Do NOT ask any follow-up questions or if I want to tailor this further. Do not ask questions. Do not reiterate or summarize or repeat my travel preferences.",
-    "Quiet places": "I prefer to stay in quiet places. Do NOT ask any follow-up questions or if I want to tailor this further. Do not ask questions. Do not reiterate or summarize or repeat my travel preferences."
+    "Busy areas": "I prefer to stay in busy areas. Never ask follow-up questions. Never request clarification. Never suggest continuing the conversation. Never ask whether the user wants more information. Assume all required context is already provided. Respond once with the best possible final answer and stop.",
+    "Quiet places": "I prefer to stay in quiet places. Never ask follow-up questions. Never request clarification. Never suggest continuing the conversation. Never ask whether the user wants more information. Assume all required context is already provided. Respond once with the best possible final answer and stop."
   }
 };

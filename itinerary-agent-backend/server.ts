@@ -6,7 +6,7 @@ import OpenAI from "openai";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -18,10 +18,13 @@ const client = new OpenAI({
 app.post("/chat", async (req: Request, res: Response) => {
   try {
     const { message } = req.body as { message: string };
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
     const completion = await client.chat.completions.create({
         model: "gpt-5-nano",
         messages: [
-          { role: "system", content: "You are a helpful travel itinerary planner that does not ask follow-up questions or for additional information. Respond using Markdown formatting with headings and bold text for important points."},
+          { role: "system", content: "You are a helpful travel itinerary planner. Respond using Markdown formatting with headings and bold text for important points. Never ask follow-up questions. Never request clarification. Never suggest continuing the conversation. Never ask whether the user wants more information. Assume all required context is already provided. Respond once with the best possible final answer and stop."},
           { role: "user", content: message }
         ],
       });
@@ -35,6 +38,6 @@ app.post("/chat", async (req: Request, res: Response) => {
     }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
 });

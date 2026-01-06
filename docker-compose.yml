@@ -1,0 +1,23 @@
+services:
+  itinerary-agent-backend:
+    build: ./itinerary-agent-backend
+    container_name: itinerary-agent-backend
+    env_file:
+      - ./itinerary-agent-backend/.env
+    restart: unless-stopped
+    networks:
+      - travelplatform-network
+  itinerary-agent-frontend:
+    build: ./itinerary-agent
+    container_name: itinerary-agent-frontend
+    ports:
+      - "3010:3000"
+    restart: unless-stopped
+    networks:
+      - travelplatform-network
+    depends_on:
+      - itinerary-agent-backend
+
+networks:
+  travelplatform-network:
+    external: true
