@@ -3,8 +3,40 @@ html, body {
     margin: 0;
 }
 
+/* CSS Variables for Light Mode */
+:root[data-theme="light"] {
+  --bg-color: #ffffff;
+  --text-color: #212737;
+  --border-color: #dee2e6;
+  --input-bg: #f8f9fa;
+  --list-bg: #ffffff;
+  --country-button-bg: #f8f9fa;
+  --country-button-text: #212737;
+  --country-button-hover: #e9ecef;
+  --back-button-bg: #6c757d;
+  --back-button-text: #ffffff;
+  --back-button-hover: #5a6268;
+  --primary-color: #007bff;
+}
+
+/* CSS Variables for Dark Mode */
+:root[data-theme="dark"] {
+  --bg-color: #212737;
+  --text-color: #eaedf3;
+  --border-color: #444b5a;
+  --input-bg: #2a3042;
+  --list-bg: #2a3042;
+  --country-button-bg: #2a3042;
+  --country-button-text: #eaedf3;
+  --country-button-hover: #3a4052;
+  --back-button-bg: #6c757d;
+  --back-button-text: #ffffff;
+  --back-button-hover: #5a6268;
+  --primary-color: #ea4d2d;
+}
+
 body {
-  background-color: #212737;
+  background-color: var(--bg-color);
   font-family: system-ui, sans-serif;
   max-width: 48rem;
   margin-left: auto;
@@ -12,7 +44,100 @@ body {
   padding-left: 1rem;
   padding-right: 1rem;
   padding-bottom: 20px;
-  color: #eaedf3;
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  body {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    padding-bottom: 15px;
+  }
+  
+  .questions {
+    min-height: auto;
+    padding: 1rem 0;
+    justify-content: flex-start;
+  }
+  
+  button {
+    padding: 0.875rem 1.25rem;
+    font-size: 1rem;
+    min-height: 44px; /* Touch-friendly minimum size */
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  input[type="text"] {
+    padding: 0.875rem 1rem;
+    font-size: 16px; /* Prevents zoom on iOS when focusing */
+    min-height: 44px;
+  }
+  
+  select {
+    padding: 0.875rem 1rem;
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px;
+  }
+  
+  h1, h2, h3 {
+    font-size: 1.5rem;
+    line-height: 1.4;
+  }
+  
+  h2 {
+    font-size: 1.25rem;
+  }
+  
+  .results {
+    margin-top: 1rem;
+    padding: 0 0.5rem;
+  }
+  
+  .results h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .loading-screen {
+    min-height: auto;
+    padding: 2rem 1rem;
+  }
+  
+  pre {
+    font-size: 0.9rem;
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .questions {
+    padding: 0.5rem 0;
+  }
+  
+  button {
+    padding: 1rem 1.25rem;
+    font-size: 0.95rem;
+  }
+  
+  h1 {
+    font-size: 1.25rem;
+  }
+  
+  h2 {
+    font-size: 1.1rem;
+  }
+  
+  .results h2 {
+    font-size: 1.25rem;
+  }
 }
 
 /* Center the entire questions screen */
@@ -42,7 +167,7 @@ body {
 
 
 h1, h2, h3, p, a, pre {
-    color: #eaedf3;
+    color: var(--text-color);
 }
 
 pre {
@@ -59,7 +184,7 @@ pre {
   justify-content: center;     /* vertical center */
   align-items: center;         /* horizontal center */
   text-align: center;
-  color: #eaedf3;
+  color: var(--text-color);
 }
 
 .spinner {
@@ -73,7 +198,7 @@ pre {
 }
 
 button {
-  background-color: #ea4d2d;
+  background-color: var(--primary-color);
   color: #fff;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -88,7 +213,7 @@ button {
 
 /* Hover effect */
 button:hover {
-  background-color: #ff6144; /* lighter shade */
+  opacity: 0.9;
   transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
 }
@@ -111,18 +236,18 @@ input[type="text"] {
   padding: 0.75rem 1rem;
   margin: 0.5rem 0;
   font-size: 1rem;
-  border: 2px solid #444b5a; /* subtle border */
+  border: 2px solid var(--border-color);
   border-radius: 8px;
-  background-color: #2a3042; /* matches your dark theme */
-  color: #eaedf3; /* light text for readability */
+  background-color: var(--input-bg);
+  color: var(--text-color);
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease, color 0.3s ease;
 }
 
 /* When user clicks/focuses into textbox */
 input[type="text"]:focus {
-  border-color: #ea4d2d; /* highlight border same as button color */
-  box-shadow: 0 0 6px rgba(234, 77, 45, 0.6); /* soft glow */
+  border-color: var(--primary-color);
+  box-shadow: 0 0 6px rgba(234, 77, 45, 0.6);
 }
 /* Hide the ugly default checkbox */
 input[type="checkbox"] {
@@ -131,9 +256,9 @@ input[type="checkbox"] {
   -moz-appearance: none;
   width: 18px;
   height: 18px;
-  border: 2px solid #444b5a; /* subtle border */
+  border: 2px solid var(--border-color);
   border-radius: 4px;
-  background-color: #2a3042; /* dark background */
+  background-color: var(--input-bg);
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
@@ -143,8 +268,8 @@ input[type="checkbox"] {
 
 /* Checked state */
 input[type="checkbox"]:checked {
-  border-color: #ea4d2d;
-  background-color: #ea4d2d;
+  border-color: var(--primary-color);
+  background-color: var(--primary-color);
 }
 
 /* Checkmark */
@@ -159,12 +284,66 @@ input[type="checkbox"]:checked::after {
 
 /* Hover effect */
 input[type="checkbox"]:hover {
-  border-color: #ea4d2d;
+  border-color: var(--primary-color);
 }
 
+/* Select dropdown styling */
+select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease, color 0.3s ease;
+  cursor: pointer;
+}
+
+select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 6px rgba(234, 77, 45, 0.6);
+}
+
+select option {
+  background-color: var(--input-bg);
+  color: var(--text-color);
+}
+
+.spinner {
+  border: 6px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--primary-color);
+}
 
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Touch-friendly improvements */
+button, 
+input[type="button"], 
+input[type="submit"],
+.country-button {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  touch-action: manipulation; /* Prevents double-tap zoom */
+}
+
+/* Prevent text size adjustment on iOS */
+input, 
+select, 
+textarea {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Improve scrolling on mobile */
+.country-list {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
