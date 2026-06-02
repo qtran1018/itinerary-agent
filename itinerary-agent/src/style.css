@@ -3,6 +3,22 @@ html, body {
     margin: 0;
 }
 
+/* Fallback: dark mode variables on :root so there is never a flash of unstyled content */
+:root {
+  --bg-color: #212737;
+  --text-color: #eaedf3;
+  --border-color: #444b5a;
+  --input-bg: #2a3042;
+  --list-bg: #2a3042;
+  --country-button-bg: #2a3042;
+  --country-button-text: #eaedf3;
+  --country-button-hover: #3a4052;
+  --back-button-bg: #6c757d;
+  --back-button-text: #ffffff;
+  --back-button-hover: #5a6268;
+  --primary-color: #ea4d2d;
+}
+
 /* CSS Variables for Light Mode */
 :root[data-theme="light"] {
   --bg-color: #ffffff;
@@ -43,7 +59,6 @@ body {
   margin-right: auto;
   padding-left: 1rem;
   padding-right: 1rem;
-  padding-bottom: 20px;
   color: var(--text-color);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -53,7 +68,6 @@ body {
   body {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
-    padding-bottom: 15px;
   }
   
   .questions {
@@ -142,11 +156,12 @@ body {
 
 /* Center the entire questions screen */
 .questions {
-  min-height: 100vh;           /* take full window height */
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: center;     /* vertical center */
-  align-items: center;         /* horizontal center */
+  justify-content: center;
+  align-items: center;
   text-align: center;
 }
 
@@ -161,7 +176,8 @@ body {
 
 /* Results flow naturally from the top */
 .results {
-  margin-top: 2rem;   /* give some breathing room at top */
+  margin-top: 2rem;
+  padding-bottom: 2rem;
 }
 
 

@@ -1,31 +1,34 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed } from "vue";
 import questions from "../data/questions";
 import { prompts } from "../data/prompts";
 import type { Question } from "../data/types";
 import { marked } from "marked";
+import keycloak from "../keycloak";
 
-const currentQuestionId = ref<string>("q1"); // start at q1
-const answers = ref<Record<string, string | string[]>>({}); // stores user answers
-const questionHistory = ref<string[]>(["q1"]); // track question navigation history
+interface ItineraryEntry {
+  name: string;
+  type: string;
+  location: string;
+  notes: string;
+}
+
+const props = defineProps<{ isDarkMode: boolean; authenticated: boolean }>();
+
+const currentQuestionId = ref<string>("q1");
+const answers = ref<Record<string, string | string[]>>({});
+const questionHistory = ref<string[]>(["q1"]);
 const quizFinished = ref(false);
 const results = ref<string>("");
 const reply = ref<string>("");
 const htmlReply = ref<string>("");
+const entries = ref<ItineraryEntry[]>([]);
 const loading = ref(false);
-const countrySearchTerm = ref<string>(""); // for country search functionality
-const isDarkMode = ref<boolean>(true); // default to dark mode
+const countrySearchTerm = ref<string>("");
+const tripDestination = ref<string>("");
 
-// Toggle theme
-function toggleTheme() {
-  isDarkMode.value = !isDarkMode.value;
-  document.documentElement.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light');
-}
-
-// Initialize theme on mount
-onMounted(() => {
-  document.documentElement.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light');
-});
+const saveStatus = ref<"idle" | "saving" | "saved" | "error">("idle");
+const exportStatus = ref<"idle" | "exporting" | "exported" | "error">("idle");
 
 const getCurrentQuestion = () =>
   questions.find((q) => q.id === currentQuestionId.value) as Question;
@@ -105,6 +108,7 @@ function submitCheckbox() {
   } else {
     quizFinished.value = true;
     results.value = mapAnswersToPrompts(answers.value);
+    sendPrompt();
   }
 }
 
@@ -142,7 +146,11 @@ function restartQuiz() {
   results.value = "";
   reply.value = "";
   htmlReply.value = "";
+  entries.value = [];
+  tripDestination.value = "";
   countrySearchTerm.value = "";
+  saveStatus.value = "idle";
+  exportStatus.value = "idle";
 }
 
 // Map answers to prompts
@@ -154,7 +162,7 @@ function mapAnswersToPrompts(answers: Record<string, string | string[]>): string
     if (!promptEntry) continue;
 
     if (typeof promptEntry === "function") {
-      if (typeof answer === "string") res.push(promptEntry(answer));
+      if (typeof answer === "string" && answer.trim()) res.push(promptEntry(answer));
     } else {
       if (Array.isArray(answer)) {
         answer.forEach((ans) => {
@@ -175,27 +183,37 @@ async function sendPrompt() {
 
   loading.value = true;
 
+  // Fallback title from quiz answers until the LLM response arrives
+  const rawAnswer = (answers.value["q3"] as string) || (answers.value["q4"] as string) || "My Trip";
+
   try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (keycloak.token) headers["Authorization"] = `Bearer ${keycloak.token}`;
+
     const response = await fetch("/api/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({message: results.value}),
+      headers,
+      body: JSON.stringify({ message: results.value }),
     });
     const data = await response.json();
     if (response.ok) {
+      // Prefer the LLM-generated title; fall back to the raw quiz answer
+      tripDestination.value = (data.title as string) || rawAnswer;
       reply.value = data.reply;
-      processReply(data.reply)
+      entries.value = data.entries ?? [];
+      processReply(data.reply);
     } else {
+      tripDestination.value = rawAnswer;
       reply.value = `Error: ${data.error || "Something went wrong"}`;
-      processReply(reply.value)
+      entries.value = [];
+      processReply(reply.value);
     }
-  }
-  catch (error) {
+  } catch (error) {
+    tripDestination.value = rawAnswer;
     reply.value = `Fetch error: ${error}`;
-  }
-  finally {
+    entries.value = [];
+    processReply(reply.value);
+  } finally {
     loading.value = false;
   }
 }
@@ -203,17 +221,67 @@ async function sendPrompt() {
 function processReply(raw: string) {
   htmlReply.value = marked.parse(raw) as string;
 }
+
+async function saveTrip() {
+  if (!props.authenticated || saveStatus.value === "saving") return;
+  saveStatus.value = "saving";
+  try {
+    await keycloak.updateToken(30);
+    const res = await fetch("/api/trips", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${keycloak.token}`,
+      },
+      body: JSON.stringify({
+        title: tripDestination.value,
+        destination: tripDestination.value,
+        entries: entries.value,
+      }),
+    });
+    saveStatus.value = res.ok ? "saved" : "error";
+  } catch {
+    saveStatus.value = "error";
+  }
+}
+
+async function exportToTravelBin() {
+  if (!props.authenticated || exportStatus.value === "exporting") return;
+
+  // Save first if not already saved
+  if (saveStatus.value !== "saved") {
+    await saveTrip();
+    if (saveStatus.value === "error") {
+      exportStatus.value = "error";
+      return;
+    }
+  }
+
+  exportStatus.value = "exporting";
+  try {
+    await keycloak.updateToken(30);
+    // Get the most recent saved trip
+    const tripsRes = await fetch("/api/trips", {
+      headers: { Authorization: `Bearer ${keycloak.token}` },
+    });
+    if (!tripsRes.ok) throw new Error("Could not fetch trips");
+    const trips = await tripsRes.json();
+    const latestTrip = trips[0];
+    if (!latestTrip) throw new Error("No trip to export");
+
+    const exportRes = await fetch(`/api/trips/${latestTrip.id}/export`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${keycloak.token}` },
+    });
+    exportStatus.value = exportRes.ok ? "exported" : "error";
+  } catch {
+    exportStatus.value = "error";
+  }
+}
 </script>
 
 <template>
   <div class="quiz">
-    <!-- Theme Toggle -->
-    <div class="theme-toggle-container">
-      <button @click="toggleTheme" class="theme-toggle-button">
-        {{ isDarkMode ? '☀️' : '🌙' }}
-      </button>
-    </div>
-
     <!-- Quiz Questions -->
     <div class="questions" v-if="!quizFinished && !loading">
       <div class="question-header">
@@ -248,14 +316,25 @@ function processReply(raw: string) {
             type="text"
             v-model="answers[getCurrentQuestion().id]"
             placeholder="Type your answer..."
+            :maxlength="getCurrentQuestion().maxLength"
           />
           <button @click="handleAnswer(answers[getCurrentQuestion().id] as string || '')">
             Next
           </button>
+          <button
+            v-if="getCurrentQuestion().optional"
+            class="skip-button"
+            @click="handleAnswer('')"
+          >
+            Skip
+          </button>
+        </div>
+        <div v-if="getCurrentQuestion().maxLength" class="char-counter">
+          {{ (answers[getCurrentQuestion().id] as string || '').length }} / {{ getCurrentQuestion().maxLength }}
         </div>
         <div v-if="questionHistory.length > 1" class="back-button-container">
-          <button 
-            @click="goBack" 
+          <button
+            @click="goBack"
             class="back-button"
           >
             ← Back
@@ -348,11 +427,48 @@ function processReply(raw: string) {
     <!-- Results -->
     <div v-else class="results">
       <h2>Your Travel Itinerary</h2>
-      <div v-html="htmlReply"></div>
-      <div class="restart-container">
-        <button @click="restartQuiz" class="restart-button">
-          Restart Quiz
+
+      <!-- Action buttons (logged in only) -->
+      <div v-if="authenticated" class="itinerary-actions">
+        <button
+          class="action-btn action-btn--save"
+          :disabled="saveStatus === 'saving' || saveStatus === 'saved'"
+          @click="saveTrip"
+        >
+          {{ saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? '✓ Saved' : 'Save Trip' }}
         </button>
+        <button
+          class="action-btn action-btn--export"
+          :disabled="exportStatus === 'exporting' || exportStatus === 'exported'"
+          @click="exportToTravelBin"
+        >
+          {{ exportStatus === 'exporting' ? 'Exporting…' : exportStatus === 'exported' ? '✓ Sent to TravelBin' : 'Export to TravelBin' }}
+        </button>
+        <span v-if="saveStatus === 'error' || exportStatus === 'error'" class="action-error">
+          Something went wrong. Please try again.
+        </span>
+      </div>
+
+      <!-- Markdown itinerary -->
+      <div v-html="htmlReply"></div>
+
+      <!-- Structured entries breakdown -->
+      <div v-if="entries.length > 0" class="entries-section">
+        <h3>Activity Breakdown</h3>
+        <div class="entries-grid">
+          <div v-for="entry in entries" :key="entry.name" class="entry-card">
+            <div class="entry-type-badge" :class="`entry-type--${entry.type.toLowerCase().replace(/[^a-z]/g, '-')}`">
+              {{ entry.type }}
+            </div>
+            <div class="entry-name">{{ entry.name }}</div>
+            <div class="entry-location">📍 {{ entry.location }}</div>
+            <div v-if="entry.notes" class="entry-notes">{{ entry.notes }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="restart-container">
+        <button @click="restartQuiz" class="restart-button">Plan Another Trip</button>
       </div>
     </div>
   </div>
@@ -366,27 +482,6 @@ function processReply(raw: string) {
 }
 button {
   margin: 0.25rem;
-}
-.theme-toggle-container {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 1000;
-}
-.theme-toggle-button {
-  padding: 0.5rem 0.75rem;
-  font-size: 1.5rem;
-  background-color: var(--input-bg);
-  color: var(--text-color);
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-.theme-toggle-button:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 .question-header {
   display: flex;
@@ -412,6 +507,29 @@ button {
   gap: 0.5rem;
   margin-top: 1rem;
 }
+.char-counter {
+  font-size: 0.78rem;
+  color: var(--text-color);
+  opacity: 0.45;
+  text-align: right;
+  margin-top: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+.skip-button {
+  background: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  opacity: 0.65;
+  box-shadow: none;
+}
+
+.skip-button:hover {
+  opacity: 1;
+  transform: none;
+  box-shadow: none;
+}
+
 .back-button-container {
   display: flex;
   justify-content: center;
@@ -519,20 +637,119 @@ button {
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
 }
 
+/* ── Itinerary action buttons ─────────────────────────────────────────── */
+.itinerary-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+.action-btn {
+  padding: 0.6rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+.action-btn:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+.action-btn:not(:disabled):hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+.action-btn--save {
+  background: var(--primary-color);
+  color: #fff;
+}
+.action-btn--export {
+  background: #10b981;
+  color: #fff;
+}
+.action-error {
+  font-size: 0.85rem;
+  color: #ef4444;
+}
+
+/* ── Entries breakdown ────────────────────────────────────────────────── */
+.entries-section {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--border-color);
+}
+.entries-section h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+.entries-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.875rem;
+}
+.entry-card {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.entry-type-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  align-self: flex-start;
+  margin-bottom: 0.15rem;
+}
+.entry-type--food---drink  { background: #fef3c7; color: #92400e; }
+.entry-type--shopping      { background: #ede9fe; color: #5b21b6; }
+.entry-type--sightseeing   { background: #dbeafe; color: #1e40af; }
+.entry-type--activity      { background: #dcfce7; color: #166534; }
+.entry-type--other         { background: #f3f4f6; color: #374151; }
+.entry-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-color);
+  line-height: 1.3;
+}
+.entry-location {
+  font-size: 0.82rem;
+  color: var(--text-color);
+  opacity: 0.65;
+}
+.entry-notes {
+  font-size: 0.82rem;
+  color: var(--text-color);
+  opacity: 0.8;
+  font-style: italic;
+  line-height: 1.4;
+  margin-top: 0.1rem;
+}
+@media (max-width: 480px) {
+  .entries-grid { grid-template-columns: 1fr; }
+  .itinerary-actions { gap: 0.5rem; }
+  .action-btn { width: 100%; text-align: center; }
+}
+
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
   .quiz {
     padding-bottom: 1rem;
-  }
-  
-  .theme-toggle-container {
-    top: 0.5rem;
-    right: 0.5rem;
-  }
-  
-  .theme-toggle-button {
-    padding: 0.4rem 0.6rem;
-    font-size: 1.25rem;
   }
   
   .question-header {
@@ -673,9 +890,5 @@ button {
     font-size: 0.95rem;
   }
   
-  .theme-toggle-button {
-    padding: 0.35rem 0.5rem;
-    font-size: 1.1rem;
-  }
 }
 </style>

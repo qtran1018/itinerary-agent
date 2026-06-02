@@ -64,5 +64,6 @@ export const prompts: Record<string, PromptEntry> = {
   q15: {
     "Busy areas": "I prefer to stay in busy areas. Never ask follow-up questions. Never request clarification. Never suggest continuing the conversation. Never ask whether the user wants more information. Assume all required context is already provided. Respond once with the best possible final answer and stop.",
     "Quiet places": "I prefer to stay in quiet places. Never ask follow-up questions. Never request clarification. Never suggest continuing the conversation. Never ask whether the user wants more information. Assume all required context is already provided. Respond once with the best possible final answer and stop."
-  }
+  },
+  q16: (answer: string) => answer.trim() ? `Additional notes from the traveler: "${answer.trim()}".` : '',
 };

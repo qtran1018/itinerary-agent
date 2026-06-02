@@ -1,15 +1,50 @@
 services:
+  itinerary-db:
+    image: postgres:16
+    container_name: itinerary-db
+    profiles: ["standalone"]
+    environment:
+      POSTGRES_DB: itinerary_agent
+      POSTGRES_USER: itinerary_user
+      POSTGRES_PASSWORD: itinerary_pass
+    ports:
+      - "5434:5432"
+    volumes:
+      - itinerary-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U itinerary_user -d itinerary_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - travelplatform-network
+
   itinerary-agent-backend:
     build: ./itinerary-agent-backend
     container_name: itinerary-agent-backend
     env_file:
       - ./itinerary-agent-backend/.env
+    environment:
+      # DB — overrides .env so the backend reaches the DB by container name (not localhost)
+      - DATABASE_URL=postgresql://itinerary_user:itinerary_pass@${POSTGRES_HOST:-itinerary-db}:5432/itinerary_agent
+      # Keycloak — tokens carry iss=localhost:8180; JWKS must be fetched via the internal network hostname
+      - KEYCLOAK_ISSUER=http://localhost:8180/realms/travel-platform
+      - KEYCLOAK_JWKS_URL=http://keycloak:8080/realms/travel-platform/protocol/openid-connect/certs
+      # TravelBin — internal network hostname, not localhost
+      - TRAVELBIN_API_URL=http://travelbin-backend:8000
+    depends_on:
+      itinerary-db:
+        condition: service_healthy
+        required: false
     restart: unless-stopped
     networks:
       - travelplatform-network
+
   itinerary-agent-frontend:
     build: ./itinerary-agent
     container_name: itinerary-agent-frontend
+    environment:
+      - VITE_BACKEND_URL=http://itinerary-agent-backend:5000
     ports:
       - "3010:3000"
     restart: unless-stopped
@@ -21,3 +56,6 @@ services:
 networks:
   travelplatform-network:
     external: true
+
+volumes:
+  itinerary-db-data:

@@ -6,4 +6,6 @@ export interface Question {
   question: string;
   options?: string[];
   next?: Record<string, string | null>; // null for last question
+  maxLength?: number;
+  optional?: boolean;
 }

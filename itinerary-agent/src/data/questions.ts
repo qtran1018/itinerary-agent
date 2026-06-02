@@ -28,7 +28,8 @@ const questions: Question[] = [
     options: ['{text}'],
     next: {
       default: "q6"
-    }
+    },
+    maxLength: 300,
   },
   {
     id: 'q4',
@@ -101,7 +102,7 @@ const questions: Question[] = [
     id: 'q11',
     type: 'checkbox',
     question: "Any dietary restrictions?",
-    options: ['Vegetarian', 'Vegan', 'Gluten-free', 'None'], //TODO: update
+    options: ['Vegetarian', 'Vegan', 'Gluten-free', 'None'],
     next: {
       default: "q12"
     }
@@ -139,8 +140,19 @@ const questions: Question[] = [
     question: "Do you prefer to stay in busy areas or quiet places?",
     options: ['Busy areas', 'Quiet places'],
     next: {
-      default: null
+      default: "q16"
     }
+  },
+  {
+    id: 'q16',
+    type: 'text',
+    question: "Any extra notes for your trip? (optional)",
+    options: ['{text}'],
+    next: {
+      default: null
+    },
+    maxLength: 200,
+    optional: true,
   }
 ];
 
