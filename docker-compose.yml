@@ -26,7 +26,7 @@ services:
       - ./itinerary-agent-backend/.env
     environment:
       # DB — overrides .env so the backend reaches the DB by container name (not localhost)
-      - DATABASE_URL=postgresql://itinerary_user:itinerary_pass@${POSTGRES_HOST:-itinerary-db}:5432/itinerary_agent
+      - DATABASE_URL=postgresql://itinerary_user:itinerary_pass@${POSTGRES_HOST:-platform-postgres}:5432/itinerary_agent
       - KEYCLOAK_ISSUER=https://auth.quangntran.com/realms/travel-platform
       - KEYCLOAK_JWKS_URL=https://auth.quangntran.com/realms/travel-platform/protocol/openid-connect/certs
       # TravelBin — internal network hostname, not localhost
