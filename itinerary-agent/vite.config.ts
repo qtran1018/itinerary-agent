@@ -5,8 +5,9 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   plugins: [vue()],
   server: {
-    host: true,  // listen on all interfaces, required for Docker
-    port: 3000,  // container port
+    host: true,
+    port: 3000,
+    allowedHosts: 'all',
     proxy: {
       '/api': {
         target: process.env.VITE_BACKEND_URL || 'http://localhost:5000',
