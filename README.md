@@ -1,53 +1,31 @@
 # Itinerary Agent
 
-An AI-powered travel planning app that guides users through a quiz-style questionnaire and generates a personalized trip itinerary using an LLM. Built as a standalone tool and designed for future integration into a larger travel platform.
+An AI-powered travel planning app that guides users through a quiz-style questionnaire and generates a personalized trip itinerary using an LLM. Authenticated users can save trips to a profile and export them directly into [TravelBin](https://github.com/qtran1018/TravelBin) as structured itinerary entries.
 
----
-
-## Overview
-
-Instead of staring at a blank text box, users answer a short series of questions about their travel preferences — destination, budget, trip length, travel style, and more. Their answers are assembled into a structured prompt and sent to an LLM, which returns a full, formatted itinerary.
-
-The project is part of a broader travel platform that includes [TravelBin](#roadmap), an app where users can manually build and organize their itineraries. The goal is to eventually let this agent generate structured itinerary data that feeds directly into TravelBin.
-
----
-
-## Demo
-
-> Live demo: *(link here)*
-
-![screenshot placeholder](https://via.placeholder.com/800x450?text=App+Screenshot)
+**Live:** [agent.quangntran.com](https://agent.quangntran.com) — part of the [travel platform portfolio](https://github.com/qtran1018/travel-platform-infra).
 
 ---
 
 ## Features
 
-- **Guided quiz flow** — branching questions that adapt based on previous answers (e.g. skip destination input if the user already knows where they want to go)
-- **Multi-select and dropdown inputs** — handles checkbox selections, text input, and a searchable country picker
-- **Back navigation** — users can go back and change an answer; downstream answers are cleared to keep responses consistent
-- **AI-generated itinerary** — answers are compiled into a natural language prompt and sent to an LLM, which returns a markdown-formatted travel plan
-- **Dark / light mode** — theme toggle, defaults to dark
-- **Mobile-friendly** — responsive layout with touch-optimized inputs
+- **Guided quiz flow** — branching questions that adapt based on previous answers (destination, budget, trip length, style, companions, and more)
+- **Multi-select and dropdown inputs** — checkbox, text, searchable country picker; free-text questions have character limits and live counters
+- **Back navigation** — go back and change an answer; downstream answers clear to keep responses consistent
+- **AI-generated itinerary** — answers compile into a structured prompt sent to OpenAI; response includes a trip title, markdown itinerary, and a structured entries array (name, type, location, notes)
+- **Save + export** — authenticated users save trips to their profile; one click exports to TravelBin as pre-populated entry rows
+- **Optional auth** — full quiz available without login; login/register via Keycloak SSO (shared with TravelBin and Splitpush)
+- **Dark / light mode**, mobile-friendly layout
 
 ---
 
-## Tech Stack
+## Stack
 
-**Frontend**
-- [Vue 3](https://vuejs.org/) with Composition API and `<script setup>`
-- TypeScript
-- Vite
-- [Marked](https://marked.js.org/) for rendering markdown responses
-
-**Backend**
-- Node.js + [Express](https://expressjs.com/)
-- TypeScript
-- [OpenAI SDK](https://platform.openai.com/docs/libraries)
-- dotenv
-
-**Infrastructure**
-- Docker + Docker Compose (frontend on port 3010, backend on port 5000)
-- Shared Docker network for multi-service travel platform integration
+| Layer | Tech |
+|---|---|
+| Frontend | Vue 3, TypeScript, Vite, keycloak-js |
+| Backend | Express 5, TypeScript, OpenAI SDK, Prisma 5, PostgreSQL |
+| Auth | Keycloak 26 (optional; JWT validated via `jwks-rsa`) |
+| Container | Docker + nginx (static build with `/api` proxy) |
 
 ---
 
@@ -55,88 +33,115 @@ The project is part of a broader travel platform that includes [TravelBin](#road
 
 ```
 Itinerary-Agent/
-├── itinerary-agent/              # Vue 3 frontend
-│   └── src/
-│       ├── components/
-│       │   └── Quiz.vue          # Main quiz UI and logic
-│       └── data/
-│           ├── questions.ts      # Question definitions and branching logic
-│           ├── prompts.ts        # Maps user answers to prompt fragments
-│           ├── country_list.ts   # Countries for dropdown
-│           └── types.ts          # TypeScript interfaces
+├── itinerary-agent/              Vue 3 frontend (port 3010 Docker / 3000 local dev)
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Quiz.vue          Main quiz UI + API calls
+│   │   │   ├── Profile.vue       Saved trips page
+│   │   │   └── AuthButton.vue    Login/Register/Logout in navbar
+│   │   └── data/
+│   │       ├── questions.ts      Question definitions + branching logic
+│   │       ├── prompts.ts        Maps answers to OpenAI prompt fragments
+│   │       └── types.ts          TypeScript interfaces
+│   ├── Dockerfile                Multi-stage: node:20-alpine build → nginx:alpine serve
+│   └── nginx.conf                Static server + /api proxy → itinerary-agent-backend:5000
 │
-├── itinerary-agent-backend/      # Express API
-│   └── server.ts                 # POST /chat endpoint → OpenAI
+├── itinerary-agent-backend/      Express 5 API (port 5000, internal only)
+│   ├── server.ts                 Routes, auth middleware, OpenAI call
+│   └── prisma/schema.prisma      Trip + TripEntry models
 │
-└── docker-compose.yml
+├── docker-compose.yml            Production build args (prod URLs baked into static build)
+└── docker-compose.override.yml   Local dev (localhost URLs, auto-applied by plain `docker compose`)
 ```
 
 ---
 
 ## How It Works
 
-1. The user works through a series of questions (destination, travel style, budget, companions, etc.)
-2. Each answer maps to a natural language prompt fragment defined in `prompts.ts`
-3. All fragments are joined into a single structured prompt
-4. The frontend sends the prompt to the Express backend via `POST /api/chat`
-5. The backend forwards it to the OpenAI API with a travel planner system prompt
-6. The response (markdown) is rendered in the UI as the final itinerary
+1. User answers quiz questions (destination, style, budget, companions, etc.)
+2. Each answer maps to a prompt fragment (`prompts.ts`); empty/skipped answers are filtered out
+3. Frontend sends the assembled prompt to `POST /api/chat`
+4. Backend calls OpenAI with a travel planner system prompt requesting structured JSON output: `{ title, markdown, entries }`
+5. UI renders the markdown itinerary; the `entries` array (name, type, location, notes) powers Save and Export
+6. Save → `POST /api/trips` stores trip in PostgreSQL via Prisma
+7. Export → `POST /api/trips/:id/export` proxies to TravelBin's `/travel/destinations/import/` with the Bearer token forwarded
 
 ---
 
-## Getting Started
+## Running Locally
 
 ### Prerequisites
 
-- Node.js 20+
-- Docker and Docker Compose
+- Node.js 20+, Docker + Docker Compose
 - An OpenAI API key
+- Keycloak running on port 8180 and PostgreSQL (shared via `keycloak-service/` and `postgres-service/`)
+- Shared Docker network: `docker network create travelplatform-network`
 
-### Running with Docker
+### Docker (recommended, combined mode)
 
 ```bash
-# Clone the repo
-git clone <repo-url>
-cd Itinerary-Agent
+# From Itinerary-Agent/
+docker compose build   # uses docker-compose.override.yml automatically (localhost URLs)
+docker compose up -d
 
-# Add your OpenAI API key
-echo "OPENAI_API_KEY=your_key_here" > itinerary-agent-backend/.env
-
-# Start both services
-docker compose up --build
+# First run — apply Prisma migrations
+docker exec itinerary-agent-backend npx prisma migrate deploy
 ```
 
-The app will be available at `http://localhost:3010`.
+Frontend: http://localhost:3010
 
-### Running Locally (without Docker)
+> Always use plain `docker compose` (no `-f`) for local dev. The override file sets `VITE_API_URL=http://localhost:5000` and `VITE_KEYCLOAK_URL=http://localhost:8180` baked into the static build. Running `docker compose -f docker-compose.yml` bakes production URLs instead.
+
+### Local dev (no Docker)
 
 ```bash
 # Backend
 cd itinerary-agent-backend
 npm install
-echo "OPENAI_API_KEY=your_key_here" > .env
-npm run dev
+# .env needs: OPENAI_API_KEY, DATABASE_URL=postgresql://...
+npm run dev      # port 5000
 
-# Frontend (in a separate terminal)
+# Frontend (separate terminal)
 cd itinerary-agent
 npm install
-npm run dev
+npm run dev      # port 3000
 ```
 
----
+When running locally without Docker, `VITE_API_URL` is unset (empty string) so all fetch calls use relative `/api/...` paths proxied by Vite to `localhost:5000`.
 
-## Roadmap
+### Test credentials
 
-This project is a module within a larger travel platform. Planned next steps:
-
-- **Structured output** — prompt the LLM to return itinerary data as JSON (activities, destinations, dates, notes) rather than plain markdown
-- **TravelBin integration** — send structured itinerary data via API to TravelBin, where users can view, edit, and manage their trip plans
-- **Export options** — download the itinerary as a PDF or copy it to clipboard
-- **Input sanitization** — harden the backend against prompt injection and add rate limiting
-- **Saved preferences** — remember user preferences across sessions
+`test@example.com` / `password123` (username: `testuser`) — or register a new account; SSO works across all platform apps.
 
 ---
 
-## License
+## Environment Variables
 
-MIT
+### Backend (`itinerary-agent-backend/.env`)
+
+| Variable | Description |
+|---|---|
+| `OPENAI_API_KEY` | Required |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `KEYCLOAK_ISSUER` | `http://localhost:8180/realms/travel-platform` (validates token `iss`) |
+| `KEYCLOAK_JWKS_URL` | JWKS endpoint (optional; defaults to issuer URL; set to internal Docker URL in compose) |
+| `TRAVELBIN_API_URL` | TravelBin backend URL for export proxy (`http://travelbin-backend:8000` in Docker) |
+
+### Frontend build args (Docker)
+
+| Variable | Description |
+|---|---|
+| `VITE_API_URL` | Backend URL baked at build time. Empty string = Vite proxy (local dev); absolute URL = direct calls (prod) |
+| `VITE_KEYCLOAK_URL` | Keycloak base URL baked at build time |
+
+---
+
+## API
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/chat` | optional | OpenAI quiz → `{ title, reply, entries }` |
+| GET | `/api/trips` | required | List saved trips |
+| POST | `/api/trips` | required | Save trip |
+| DELETE | `/api/trips/:id` | required | Delete trip |
+| POST | `/api/trips/:id/export` | required | Export to TravelBin |
