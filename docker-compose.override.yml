@@ -1,0 +1,15 @@
+# LOCAL DEV ONLY — automatically applied by `docker compose up`.
+# Production deploy uses: docker compose -f docker-compose.yml up
+
+services:
+  itinerary-agent-backend:
+    environment:
+      # Only the issuer differs locally — JWKS already points at the internal
+      # keycloak:8080 in the base file, which is correct for both environments.
+      KEYCLOAK_ISSUER: http://localhost:8180/realms/travel-platform
+
+  itinerary-agent-frontend:
+    build:
+      args:
+        VITE_API_URL: http://localhost:5000
+        VITE_KEYCLOAK_URL: http://localhost:8180

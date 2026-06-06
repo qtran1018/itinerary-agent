@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import keycloak from "../keycloak";
+
+const router = useRouter();
 
 interface TripEntry {
   id: string;
@@ -20,6 +23,8 @@ interface Trip {
 
 const props = defineProps<{ authenticated: boolean }>();
 
+const API_URL = import.meta.env.VITE_API_URL ?? '';
+
 const trips = ref<Trip[]>([]);
 const loading = ref(true);
 const expandedTrip = ref<string | null>(null);
@@ -30,7 +35,7 @@ async function loadTrips() {
   if (!props.authenticated) { loading.value = false; return; }
   try {
     await keycloak.updateToken(30);
-    const res = await fetch("/api/trips", {
+    const res = await fetch(`${API_URL}/api/trips`, {
       headers: { Authorization: `Bearer ${keycloak.token}` },
     });
     if (res.ok) trips.value = await res.json();
@@ -46,7 +51,7 @@ async function deleteTrip(id: string) {
   deleteStatus.value[id] = true;
   try {
     await keycloak.updateToken(30);
-    const res = await fetch(`/api/trips/${id}`, {
+    const res = await fetch(`${API_URL}/api/trips/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${keycloak.token}` },
     });
@@ -60,7 +65,7 @@ async function exportToTravelBin(trip: Trip) {
   exportStatus.value[trip.id] = "exporting";
   try {
     await keycloak.updateToken(30);
-    const res = await fetch(`/api/trips/${trip.id}/export`, {
+    const res = await fetch(`${API_URL}/api/trips/${trip.id}/export`, {
       method: "POST",
       headers: { Authorization: `Bearer ${keycloak.token}` },
     });
@@ -83,7 +88,10 @@ onMounted(loadTrips);
 
 <template>
   <div class="profile-page">
-    <h2 class="profile-title">My Saved Trips</h2>
+    <div class="profile-header">
+      <h2 class="profile-title">My Saved Trips</h2>
+      <button class="plan-btn" @click="router.push('/')">+ Plan a Trip</button>
+    </div>
 
     <div v-if="!authenticated" class="profile-empty">
       <p>Log in to save and view your trips.</p>
@@ -158,11 +166,35 @@ onMounted(loadTrips);
   margin: 0 auto;
   padding: 2rem 1.5rem 3rem;
 }
+.profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
 .profile-title {
   font-size: 1.75rem;
   font-weight: 700;
-  margin-bottom: 1.5rem;
+  margin: 0;
   color: var(--text-color);
+}
+.plan-btn {
+  padding: 0.55rem 1.25rem;
+  background: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+.plan-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
 }
 .profile-empty {
   color: var(--text-color);

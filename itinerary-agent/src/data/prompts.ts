@@ -52,7 +52,9 @@ export const prompts: Record<string, PromptEntry> = {
   },
   q13: {
     "Packed itinerary": "I want a packed itinerary.",
-    "Relaxed pace": "I want a relaxed travel pace."
+    "Relaxed pace": "I want a relaxed travel pace.",
+    "Something in between": "I want an itinerary that balances a packed schedule with downtime — not too rushed, not too loose.",
+    "No preference": "I have no preference for how packed or relaxed my itinerary is."
   },
   q14: {
     "Solo": "I am traveling solo.",
@@ -62,8 +64,10 @@ export const prompts: Record<string, PromptEntry> = {
     "Group": "I am traveling in a group."
   },
   q15: {
-    "Busy areas": "I prefer to stay in busy areas. Never ask follow-up questions. Never request clarification. Never suggest continuing the conversation. Never ask whether the user wants more information. Assume all required context is already provided. Respond once with the best possible final answer and stop.",
-    "Quiet places": "I prefer to stay in quiet places. Never ask follow-up questions. Never request clarification. Never suggest continuing the conversation. Never ask whether the user wants more information. Assume all required context is already provided. Respond once with the best possible final answer and stop."
+    "Busy areas": "I prefer to stay in busy, lively areas. Never ask follow-up questions. Never request clarification. Never suggest continuing the conversation. Never ask whether the user wants more information. Assume all required context is already provided. Respond once with the best possible final answer and stop.",
+    "Quiet places": "I prefer to stay in quiet, peaceful areas away from crowds. Never ask follow-up questions. Never request clarification. Never suggest continuing the conversation. Never ask whether the user wants more information. Assume all required context is already provided. Respond once with the best possible final answer and stop.",
+    "Something in between": "I prefer to stay somewhere that balances convenience and liveliness with some peace and quiet — not in the heart of the bustle, but not fully secluded either. Never ask follow-up questions. Never request clarification. Never suggest continuing the conversation. Never ask whether the user wants more information. Assume all required context is already provided. Respond once with the best possible final answer and stop.",
+    "No preference": "I have no preference for how busy or quiet my accommodation area is. Never ask follow-up questions. Never request clarification. Never suggest continuing the conversation. Never ask whether the user wants more information. Assume all required context is already provided. Respond once with the best possible final answer and stop."
   },
   q16: (answer: string) => answer.trim() ? `Additional notes from the traveler: "${answer.trim()}".` : '',
 };

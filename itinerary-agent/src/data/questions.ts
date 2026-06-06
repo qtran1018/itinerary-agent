@@ -120,7 +120,7 @@ const questions: Question[] = [
     id: 'q13',
     type: 'buttons',
     question: "Do you prefer a packed itinerary or a relaxed pace?",
-    options: ['Packed itinerary', 'Relaxed pace'],
+    options: ['Packed itinerary', 'Relaxed pace', 'Something in between', 'No preference'],
     next: {
       default: "q14"
     }
@@ -138,7 +138,7 @@ const questions: Question[] = [
     id: 'q15',
     type: 'buttons',
     question: "Do you prefer to stay in busy areas or quiet places?",
-    options: ['Busy areas', 'Quiet places'],
+    options: ['Busy areas', 'Quiet places', 'Something in between', 'No preference'],
     next: {
       default: "q16"
     }

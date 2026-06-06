@@ -12,6 +12,8 @@ RUN npx prisma generate
 
 COPY . .
 
+RUN npm run build
+
 EXPOSE 5000
 
-CMD ["npm", "run", "dev"]
+CMD ["node", "dist/server.js"]

@@ -26,11 +26,17 @@ services:
       - ./itinerary-agent-backend/.env
     environment:
       # DB — overrides .env so the backend reaches the DB by container name (not localhost)
-      - DATABASE_URL=postgresql://itinerary_user:itinerary_pass@${POSTGRES_HOST:-platform-postgres}:5432/itinerary_agent
+      - DATABASE_URL=postgresql://itinerary_user:${ITINERARY_DB_PASSWORD:-itinerary_pass}@${POSTGRES_HOST:-platform-postgres}:5432/itinerary_agent
       - KEYCLOAK_ISSUER=https://auth.quangntran.com/realms/travel-platform
-      - KEYCLOAK_JWKS_URL=https://auth.quangntran.com/realms/travel-platform/protocol/openid-connect/certs
+      # JWKS fetched over the internal Docker network (faster, resilient to edge outages,
+      # not subject to Cloudflare rate limits). iss is still validated against the public
+      # KEYCLOAK_ISSUER above — the keys are identical regardless of fetch URL. Correct for
+      # both local and prod since keycloak:8080 is reachable on travelplatform-network.
+      - KEYCLOAK_JWKS_URL=http://keycloak:8080/realms/travel-platform/protocol/openid-connect/certs
       # TravelBin — internal network hostname, not localhost
       - TRAVELBIN_API_URL=http://travelbin-backend:8000
+    ports:
+      - "127.0.0.1:5000:5000"
     depends_on:
       itinerary-db:
         condition: service_healthy
@@ -40,10 +46,12 @@ services:
       - travelplatform-network
 
   itinerary-agent-frontend:
-    build: ./itinerary-agent
+    build:
+      context: ./itinerary-agent
+      args:
+        VITE_API_URL: https://agent-api.quangntran.com
+        VITE_KEYCLOAK_URL: https://auth.quangntran.com
     container_name: itinerary-agent-frontend
-    environment:
-      - VITE_BACKEND_URL=http://itinerary-agent-backend:5000
     ports:
       - "3010:3000"
     restart: unless-stopped

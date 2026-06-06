@@ -84,6 +84,9 @@ onUnmounted(() => {
       <div class="navbar-links">
         <RouterLink to="/" class="nav-link">Planner</RouterLink>
         <RouterLink v-if="authenticated" to="/profile" class="nav-link">My Trips</RouterLink>
+        <span class="nav-divider" aria-hidden="true"></span>
+        <a href="https://travelbin.quangntran.com" target="_blank" rel="noopener noreferrer" class="nav-link nav-link--external">TravelBin ↗</a>
+        <a href="https://splitpush.quangntran.com" target="_blank" rel="noopener noreferrer" class="nav-link nav-link--external">Splitpush ↗</a>
       </div>
     </div>
     <div class="navbar-right">
@@ -109,6 +112,9 @@ onUnmounted(() => {
     <div class="mobile-menu" :class="{ 'mobile-menu--open': isMenuOpen }">
       <RouterLink to="/" class="mobile-nav-link" @click="closeMenu">Planner</RouterLink>
       <RouterLink v-if="authenticated" to="/profile" class="mobile-nav-link" @click="closeMenu">My Trips</RouterLink>
+      <div class="mobile-divider" />
+      <a href="https://travelbin.quangntran.com" target="_blank" rel="noopener noreferrer" class="mobile-nav-link" @click="closeMenu">TravelBin ↗</a>
+      <a href="https://splitpush.quangntran.com" target="_blank" rel="noopener noreferrer" class="mobile-nav-link" @click="closeMenu">Splitpush ↗</a>
       <div class="mobile-divider" />
       <div class="mobile-footer">
         <span v-if="authenticated" class="mobile-username">{{ username }}</span>
@@ -180,6 +186,17 @@ onUnmounted(() => {
 .nav-link:hover {
   background-color: var(--border-color);
   color: var(--primary-color);
+}
+
+.nav-link--external {
+  color: color-mix(in srgb, var(--text-color) 72%, transparent);
+}
+
+.nav-divider {
+  width: 1px;
+  height: 18px;
+  background-color: var(--border-color);
+  margin: 0 0.375rem;
 }
 
 .nav-link.router-link-active {
@@ -264,7 +281,7 @@ onUnmounted(() => {
 }
 
 .mobile-menu--open {
-  max-height: 320px;
+  max-height: 460px;
 }
 
 .mobile-nav-link {

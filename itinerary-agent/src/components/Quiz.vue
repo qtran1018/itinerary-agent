@@ -28,6 +28,8 @@ const countrySearchTerm = ref<string>("");
 const tripDestination = ref<string>("");
 
 const saveStatus = ref<"idle" | "saving" | "saved" | "error">("idle");
+
+const API_URL = import.meta.env.VITE_API_URL ?? '';
 const exportStatus = ref<"idle" | "exporting" | "exported" | "error">("idle");
 
 const getCurrentQuestion = () =>
@@ -78,13 +80,32 @@ function handleAnswer(option: string) {
   }
 }
 
+// Options that, when selected, should deselect all others (and vice versa)
+const exclusiveOptions: Record<string, string> = {
+  q10: 'Mix of everything',
+  q11: 'None',
+};
+
 // Handle checkbox selections (multiple)
 function handleCheckboxChange(option: string, checked: boolean) {
   const question = getCurrentQuestion();
   const prev = (answers.value[question.id] as string[]) || [];
-  answers.value[question.id] = checked
-    ? [...prev, option]
-    : prev.filter((o) => o !== option);
+  const exclusiveOption = exclusiveOptions[question.id];
+
+  if (!checked) {
+    answers.value[question.id] = prev.filter((o) => o !== option);
+    return;
+  }
+
+  if (exclusiveOption && option === exclusiveOption) {
+    // Selecting the catch-all clears everything else
+    answers.value[question.id] = [option];
+  } else if (exclusiveOption && prev.includes(exclusiveOption)) {
+    // Selecting a specific option removes the catch-all
+    answers.value[question.id] = [...prev.filter((o) => o !== exclusiveOption), option];
+  } else {
+    answers.value[question.id] = [...prev, option];
+  }
 }
 
 // Go to next after checkbox question
@@ -190,7 +211,7 @@ async function sendPrompt() {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (keycloak.token) headers["Authorization"] = `Bearer ${keycloak.token}`;
 
-    const response = await fetch("/api/chat", {
+    const response = await fetch(`${API_URL}/api/chat`, {
       method: "POST",
       headers,
       body: JSON.stringify({ message: results.value }),
@@ -227,7 +248,7 @@ async function saveTrip() {
   saveStatus.value = "saving";
   try {
     await keycloak.updateToken(30);
-    const res = await fetch("/api/trips", {
+    const res = await fetch(`${API_URL}/api/trips`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -261,7 +282,7 @@ async function exportToTravelBin() {
   try {
     await keycloak.updateToken(30);
     // Get the most recent saved trip
-    const tripsRes = await fetch("/api/trips", {
+    const tripsRes = await fetch(`${API_URL}/api/trips`, {
       headers: { Authorization: `Bearer ${keycloak.token}` },
     });
     if (!tripsRes.ok) throw new Error("Could not fetch trips");
@@ -269,7 +290,7 @@ async function exportToTravelBin() {
     const latestTrip = trips[0];
     if (!latestTrip) throw new Error("No trip to export");
 
-    const exportRes = await fetch(`/api/trips/${latestTrip.id}/export`, {
+    const exportRes = await fetch(`${API_URL}/api/trips/${latestTrip.id}/export`, {
       method: "POST",
       headers: { Authorization: `Bearer ${keycloak.token}` },
     });
@@ -290,7 +311,7 @@ async function exportToTravelBin() {
 
       <!-- Buttons -->
       <div v-if="getCurrentQuestion().type === 'buttons'">
-        <div class="options-container">
+        <div class="options-container options-container--buttons">
           <button
             v-for="option in getCurrentQuestion().options"
             :key="option"
@@ -428,25 +449,25 @@ async function exportToTravelBin() {
     <div v-else class="results">
       <h2>Your Travel Itinerary</h2>
 
-      <!-- Action buttons (logged in only) -->
-      <div v-if="authenticated" class="itinerary-actions">
-        <button
-          class="action-btn action-btn--save"
-          :disabled="saveStatus === 'saving' || saveStatus === 'saved'"
-          @click="saveTrip"
-        >
-          {{ saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? '✓ Saved' : 'Save Trip' }}
-        </button>
-        <button
-          class="action-btn action-btn--export"
-          :disabled="exportStatus === 'exporting' || exportStatus === 'exported'"
-          @click="exportToTravelBin"
-        >
-          {{ exportStatus === 'exporting' ? 'Exporting…' : exportStatus === 'exported' ? '✓ Sent to TravelBin' : 'Export to TravelBin' }}
-        </button>
-        <span v-if="saveStatus === 'error' || exportStatus === 'error'" class="action-error">
-          Something went wrong. Please try again.
-        </span>
+      <!-- Action buttons -->
+      <div class="itinerary-actions">
+        <template v-if="authenticated">
+          <button
+            :class="['action-btn', saveStatus === 'error' ? 'action-btn--error' : 'action-btn--save']"
+            :disabled="saveStatus === 'saving' || saveStatus === 'saved'"
+            @click="saveTrip"
+          >
+            {{ saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? '✓ Saved' : saveStatus === 'error' ? '✗ Failed — Retry' : 'Save Trip' }}
+          </button>
+          <button
+            :class="['action-btn', exportStatus === 'error' ? 'action-btn--error' : 'action-btn--export']"
+            :disabled="exportStatus === 'exporting' || exportStatus === 'exported'"
+            @click="exportToTravelBin"
+          >
+            {{ exportStatus === 'exporting' ? 'Exporting…' : exportStatus === 'exported' ? '✓ Sent to TravelBin' : exportStatus === 'error' ? '✗ Failed — Retry' : 'Export to TravelBin' }}
+          </button>
+        </template>
+        <button @click="restartQuiz" class="action-btn action-btn--restart">Plan Another Trip</button>
       </div>
 
       <!-- Markdown itinerary -->
@@ -467,9 +488,6 @@ async function exportToTravelBin() {
         </div>
       </div>
 
-      <div class="restart-container">
-        <button @click="restartQuiz" class="restart-button">Plan Another Trip</button>
-      </div>
     </div>
   </div>
 </template>
@@ -506,6 +524,11 @@ button {
   align-items: center;
   gap: 0.5rem;
   margin-top: 1rem;
+}
+.options-container--buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  justify-items: stretch;
 }
 .char-counter {
   font-size: 0.78rem;
@@ -613,30 +636,6 @@ button {
   color: white;
   border-color: var(--primary-color);
 }
-.restart-container {
-  margin-top: 2rem;
-  display: flex;
-  justify-content: center;
-  padding-top: 2rem;
-  border-top: 2px solid var(--border-color);
-}
-.restart-button {
-  padding: 0.75rem 2rem;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-.restart-button:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
-}
-
 /* ── Itinerary action buttons ─────────────────────────────────────────── */
 .itinerary-actions {
   display: flex;
@@ -674,9 +673,21 @@ button {
   background: #10b981;
   color: #fff;
 }
-.action-error {
-  font-size: 0.85rem;
-  color: #ef4444;
+.action-btn--restart {
+  background: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  margin-left: auto;
+}
+.action-btn--restart:not(:disabled):hover {
+  background: var(--input-bg);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  opacity: 1;
+}
+.action-btn--error {
+  background: #ef4444;
+  color: #fff;
 }
 
 /* ── Entries breakdown ────────────────────────────────────────────────── */
@@ -744,6 +755,7 @@ button {
   .entries-grid { grid-template-columns: 1fr; }
   .itinerary-actions { gap: 0.5rem; }
   .action-btn { width: 100%; text-align: center; }
+  .options-container--buttons { grid-template-columns: 1fr; }
 }
 
 /* Mobile Responsive Styles */
@@ -861,19 +873,6 @@ button {
     flex-shrink: 0;
   }
   
-  .restart-container {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    padding: 0 0.5rem;
-  }
-  
-  .restart-button {
-    width: 100%;
-    max-width: 100%;
-    min-height: 48px;
-    padding: 1rem 2rem;
-    font-size: 1.1rem;
-  }
 }
 
 @media (max-width: 480px) {
