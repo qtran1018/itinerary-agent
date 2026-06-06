@@ -69,5 +69,12 @@ export const prompts: Record<string, PromptEntry> = {
     "Something in between": "I prefer to stay somewhere that balances convenience and liveliness with some peace and quiet — not in the heart of the bustle, but not fully secluded either. Never ask follow-up questions. Never request clarification. Never suggest continuing the conversation. Never ask whether the user wants more information. Assume all required context is already provided. Respond once with the best possible final answer and stop.",
     "No preference": "I have no preference for how busy or quiet my accommodation area is. Never ask follow-up questions. Never request clarification. Never suggest continuing the conversation. Never ask whether the user wants more information. Assume all required context is already provided. Respond once with the best possible final answer and stop."
   },
+  q15b: (answer: string) => {
+    if (!answer.trim()) return '';
+    const [year, month, day] = answer.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
+    const formatted = d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    return `The trip starts on ${formatted}. Assign a "date" field to each entry in YYYY-MM-DD format based on which day of the itinerary it falls on — Day 1 entries get ${answer}, Day 2 entries get the next calendar date, and so on.`;
+  },
   q16: (answer: string) => answer.trim() ? `Additional notes from the traveler: "${answer.trim()}".` : '',
 };

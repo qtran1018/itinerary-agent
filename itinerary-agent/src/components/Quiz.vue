@@ -11,6 +11,7 @@ interface ItineraryEntry {
   type: string;
   location: string;
   notes: string;
+  date?: string | null;
 }
 
 const props = defineProps<{ isDarkMode: boolean; authenticated: boolean }>();
@@ -360,6 +361,29 @@ async function exportToTravelBin() {
           >
             ← Back
           </button>
+        </div>
+      </div>
+
+      <!-- Date input -->
+      <div v-else-if="getCurrentQuestion().type === 'date'">
+        <div class="options-container">
+          <input
+            type="date"
+            v-model="answers[getCurrentQuestion().id]"
+          />
+          <button @click="handleAnswer(answers[getCurrentQuestion().id] as string || '')">
+            Next
+          </button>
+          <button
+            v-if="getCurrentQuestion().optional"
+            class="skip-button"
+            @click="handleAnswer('')"
+          >
+            Skip
+          </button>
+        </div>
+        <div v-if="questionHistory.length > 1" class="back-button-container">
+          <button @click="goBack" class="back-button">← Back</button>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-export type QuestionType = 'buttons' | 'text' | 'checkbox' | 'dropdown';
+export type QuestionType = 'buttons' | 'text' | 'checkbox' | 'dropdown' | 'date';
 
 export interface Question {
   id: string;

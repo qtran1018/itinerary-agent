@@ -83,6 +83,7 @@ export interface ItineraryEntry {
   type: "Food & Drink" | "Shopping" | "Sightseeing" | "Activity" | "Other";
   location: string;
   notes: string;
+  date?: string | null;
 }
 
 // ── /chat ────────────────────────────────────────────────────────────────────
@@ -95,11 +96,12 @@ Your response MUST be a single valid JSON object with exactly three fields:
 
 2. "markdown": A beautifully formatted Markdown travel itinerary with headings, bold highlights, and a clear day-by-day or section-by-section structure. Make it engaging and practical.
 
-3. "entries": A JSON array of individual activities, attractions, restaurants, and experiences from the itinerary. Each entry must have exactly these four fields:
+3. "entries": A JSON array of individual activities, attractions, restaurants, and experiences from the itinerary. Each entry must have exactly these five fields:
    - "name": Specific, recognisable name of the place or activity (e.g. "Senso-ji Temple", "Tsukiji Outer Market Breakfast")
    - "type": Exactly one of: "Food & Drink", "Shopping", "Sightseeing", "Activity", "Other"
    - "location": Specific location string, e.g. "Asakusa, Tokyo, Japan"
    - "notes": One concise, practical sentence — a tip, highlight, or what makes it worth visiting
+   - "date": If the user's message includes a trip start date, assign a YYYY-MM-DD date to this entry based on which day of the itinerary it falls on (Day 1 = start date, Day 2 = start date + 1 day, etc.). If no start date was provided, set this field to null.
 
 Guidelines for entries:
 - Include 8–20 entries depending on trip length
@@ -113,7 +115,7 @@ Guidelines for entries:
 Output ONLY the raw JSON object. No markdown code fences, no explanation before or after.
 
 Example:
-{"title":"3-Day Paris Itinerary","markdown":"# 3-Day Paris Itinerary\\n\\n## Day 1\\n...","entries":[{"name":"Eiffel Tower","type":"Sightseeing","location":"Champ de Mars, Paris, France","notes":"Go at dusk for stunning city views with the lights turning on."}]}`;
+{"title":"3-Day Paris Itinerary","markdown":"# 3-Day Paris Itinerary\\n\\n## Day 1\\n...","entries":[{"name":"Eiffel Tower","type":"Sightseeing","location":"Champ de Mars, Paris, France","notes":"Go at dusk for stunning city views with the lights turning on.","date":"2026-07-14"}]}`;
 
 app.post("/api/chat", async (req: Request, res: Response) => {
   try {
@@ -146,6 +148,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
         ? parsed.entries.map((e: ItineraryEntry) => ({
             ...e,
             location: cleanLocation(e.name, e.location),
+            date: typeof e.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.date) ? e.date : null,
           }))
         : [];
     } catch {
@@ -205,6 +208,7 @@ app.post("/api/trips", requireAuth, async (req: Request, res: Response, next: Ne
             type: e.type,
             location: e.location,
             notes: e.notes ?? "",
+            date: e.date ?? null,
           })),
         },
       },
@@ -263,6 +267,7 @@ app.post("/api/trips/:id/export", requireAuth, async (req: Request, res: Respons
           type: e.type,
           location: e.location,
           notes: e.notes,
+          date: e.date ?? null,
         })),
       }),
     });

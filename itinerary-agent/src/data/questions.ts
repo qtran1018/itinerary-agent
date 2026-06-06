@@ -140,8 +140,17 @@ const questions: Question[] = [
     question: "Do you prefer to stay in busy areas or quiet places?",
     options: ['Busy areas', 'Quiet places', 'Something in between', 'No preference'],
     next: {
-      default: "q16"
+      default: "q15b"
     }
+  },
+  {
+    id: 'q15b',
+    type: 'date',
+    question: "When does your trip start? (optional — adds dates to your itinerary entries)",
+    next: {
+      default: "q16"
+    },
+    optional: true,
   },
   {
     id: 'q16',
