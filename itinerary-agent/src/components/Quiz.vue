@@ -366,11 +366,13 @@ async function exportToTravelBin() {
 
       <!-- Date input -->
       <div v-else-if="getCurrentQuestion().type === 'date'">
-        <div class="options-container">
+        <div class="date-input-row">
           <input
             type="date"
             v-model="answers[getCurrentQuestion().id]"
           />
+        </div>
+        <div class="options-container">
           <button @click="handleAnswer(answers[getCurrentQuestion().id] as string || '')">
             Next
           </button>
@@ -379,7 +381,7 @@ async function exportToTravelBin() {
             class="skip-button"
             @click="handleAnswer('')"
           >
-            Skip
+            Skip (optional)
           </button>
         </div>
         <div v-if="questionHistory.length > 1" class="back-button-container">
@@ -561,6 +563,22 @@ button {
   text-align: right;
   margin-top: 0.25rem;
   padding-right: 0.25rem;
+}
+
+.date-input-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.date-input-row input[type="date"] {
+  padding: 0.55rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--secondary-color);
+  color: var(--text-color);
+  font-size: 1rem;
+  cursor: pointer;
 }
 
 .skip-button {

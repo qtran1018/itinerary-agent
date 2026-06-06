@@ -146,7 +146,7 @@ const questions: Question[] = [
   {
     id: 'q15b',
     type: 'date',
-    question: "When does your trip start? (optional — adds dates to your itinerary entries)",
+    question: "What is your first full day at the destination?",
     next: {
       default: "q16"
     },
