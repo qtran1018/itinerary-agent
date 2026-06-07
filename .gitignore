@@ -22,7 +22,6 @@ itinerary-agent-backend/.env
 # =========================
 dist/
 public/dist/
-vite-env.d.ts
 
 # =========================
 # TypeScript
