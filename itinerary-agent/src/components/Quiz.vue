@@ -381,7 +381,7 @@ async function exportToTravelBin() {
             class="skip-button"
             @click="handleAnswer('')"
           >
-            Skip (optional)
+            Skip
           </button>
         </div>
         <div v-if="questionHistory.length > 1" class="back-button-container">

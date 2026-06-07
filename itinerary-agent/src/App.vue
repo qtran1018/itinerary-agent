@@ -120,7 +120,7 @@ onUnmounted(() => {
         <span v-if="authenticated" class="mobile-username">{{ username }}</span>
         <button v-if="authenticated" class="mobile-auth-btn mobile-auth-btn--outline" @click="logout">Logout</button>
         <button v-else class="mobile-auth-btn mobile-auth-btn--outline" @click="register">Register</button>
-        <button v-else class="mobile-auth-btn mobile-auth-btn--filled" @click="login">Login</button>
+        <button v-if="!authenticated" class="mobile-auth-btn mobile-auth-btn--filled" @click="login">Login</button>
         <button class="mobile-theme-btn" @click="() => { toggleTheme(); closeMenu(); }">
           {{ isDarkMode ? '☀️ Light mode' : '🌙 Dark mode' }}
         </button>
